@@ -33,7 +33,7 @@ def camera():
     return ""
 
 @app.route('/photos')
-def camera():
+def photos():
     print("zdjecia")
     #implementacja
     return "tu sa zdjecia"
