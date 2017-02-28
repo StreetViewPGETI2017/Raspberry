@@ -1,5 +1,5 @@
 from flask import Flask
-
+import os
 app = Flask(__name__)
 
 @app.route('/forward')
@@ -29,7 +29,8 @@ def backward():
 @app.route('/camera')
 def camera():
     print("robimy zdjecia")
-    #implementacja
+    os.system("raspistill -n -o static/test.jpg")
+    print("zrobiono zdjecie")
     return "cyk"
 
 @app.route('/photos')
@@ -37,7 +38,7 @@ def photos():
     print("zdjecia")
 
     #implementacja
-    return "url_for('static', filename='test.txt')"
+    return ""
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0')
