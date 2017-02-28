@@ -29,14 +29,14 @@ def backward():
 @app.route('/camera')
 def camera():
     print("robimy zdjecia")
-    os.system("raspistill -n -o static/test.jpg")
+    os.system("raspistill -n -t 1 -o static/test.jpg") #wywołujemy raspistill który wykonuje zdjęcie po sekundzie
     print("zrobiono zdjecie")
-    return "cyk"
+    return "zz" # zdjecie zrobione
 
 @app.route('/photos')
 def photos():
     print("zdjecia")
-
+    #zdjęcia dostępne pod /static/test.jpg
     #implementacja
     return ""
 
