@@ -30,7 +30,7 @@ def backward():
 def camera():
     print("robimy zdjecia")
     #implementacja
-    return ""
+    return "cyk"
 
 @app.route('/photos')
 def photos():
