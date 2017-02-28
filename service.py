@@ -35,8 +35,9 @@ def camera():
 @app.route('/photos')
 def photos():
     print("zdjecia")
+
     #implementacja
-    return "tu sa zdjecia"
+    return "url_for('static', filename='test.txt')"
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0')
