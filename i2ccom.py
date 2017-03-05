@@ -14,4 +14,4 @@ def switch (n):
 
 def send (command, arg):
     instruction = switch(command) * (2 ** 10) + arg #złożenie instrukcji, 2 najstarsze bity to rozkaz, a kolejne to argument
-    i2c_bus.transaction(i2c.writing_bytes(address, instruction)) # wysłanie
+    i2c_bus.transaction(i2c.writing_bytes(address, instruction)) # wysłanie przez I2C
