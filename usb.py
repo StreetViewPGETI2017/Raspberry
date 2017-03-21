@@ -13,8 +13,8 @@ class usb:
 
     def send(self, orders): # wysyla liste orders z dodanym znakiem konca "$"
         for i in orders:
-            write(i.encode())
-        write(b"$") # koniec polecenia
+            self.write(i.encode())
+        self.write(b"$") # koniec polecenia
 
 
     def read(self): # czeka i zwraca pojedyncza odpowiedz (linie)
@@ -25,10 +25,10 @@ class usb:
 
     def receive(self): # czeka, wczytuje do "$" i zwraca wszysstkie komunikaty jako liste (bez "$").
         data = []
-        last = read()
+        last = self.read()
         while last != "$":
             data = data + last
-            last = read()
+            last = self.read()
         return data
 
 
