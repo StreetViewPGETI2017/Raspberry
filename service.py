@@ -25,7 +25,7 @@ def left(): # przesyla polecenie skretu w lewo (l) i kat (w stopniach), nastepni
     print("skrecamy w lewo")
 	
     #implementacja
-	angle = "90" # tymczasowo kat jest staly i ignowrowany
+    angle = "90" # tymczasowo kat jest staly i ignowrowany
     orders = ["l", angle]
     arduino_connect.send(orders)
     status = arduino_connect.receive()
@@ -36,8 +36,7 @@ def left(): # przesyla polecenie skretu w lewo (l) i kat (w stopniach), nastepni
 @app.route('/right')
 def right(): # przesyla polecenie skretu w lewo (l) i kat (w stopniach), nastepnie czeka na odpowiedz
     print("skrecamy w prawo")
-    #implementacja
-	angle = "90" # tymczasowo kat jest staly i ignowrowany
+    angle = "90" # tymczasowo kat jest staly i ignowrowany
     orders = ["r", angle]
     arduino_connect.angle(orders)
     status = arduino_connect.receive()
@@ -53,7 +52,7 @@ def backward(): # przesyla polecenie jazdy do tylu (b) i dystans (w metrach), na
     orders = ["b", distance]
     arduino_connect.send(orders)
     status = arduino_connect.receive()
-    print(status) print(status) # status nie jest sprawdzany, zatem sie go tylko wypisuje
+    print(status) # status nie jest sprawdzany, zatem sie go tylko wypisuje
     return ""
 
 @app.route('/camera')
@@ -66,7 +65,7 @@ def camera():
 @app.route('/photos')
 def photos():
     print("zdjecia <\br>")
-	print('<a href="static/test.jpg"> Tu </a>') 
+    print('<a href="static/test.jpg"> Tu </a>')
     #zdjęcia dostępne pod /static/test.jpg
     #implementacja
     return ""
