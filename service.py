@@ -3,6 +3,7 @@ import os
 from usb import usb
 app = Flask(__name__)
 arduino_connect = usb
+
 @app.route('/forward')
 def forward(): # przesyla polecenie jazdy do przodu (f) i dystans (w metrach), nastepnie czeka na odpowiedz
     print("jedziemy do przodu")
@@ -12,7 +13,7 @@ def forward(): # przesyla polecenie jazdy do przodu (f) i dystans (w metrach), n
     orders = ["f", distance]
     arduino_connect.send(orders)
     status = arduino_connect.receive()
-    print(status) print(status) # status nie jest sprawdzany, zatem sie go tylko wypisuje
+    print(status) # status nie jest sprawdzany, zatem sie go tylko wypisuje
     # if status != distance:
        #  print("Error")
     # else:
@@ -25,7 +26,7 @@ def left(): # przesyla polecenie skretu w lewo (l) i kat (w stopniach), nastepni
 	
     #implementacja
 	angle = "90" # tymczasowo kat jest staly i ignowrowany
-    orders = ["l", distance]
+    orders = ["l", angle]
     arduino_connect.send(orders)
     status = arduino_connect.receive()
     print(status) # status nie jest sprawdzany, zatem sie go tylko wypisuje 
@@ -37,7 +38,7 @@ def right(): # przesyla polecenie skretu w lewo (l) i kat (w stopniach), nastepn
     print("skrecamy w prawo")
     #implementacja
 	angle = "90" # tymczasowo kat jest staly i ignowrowany
-    orders = ["r", distance]
+    orders = ["r", angle]
     arduino_connect.angle(orders)
     status = arduino_connect.receive()
     print(status) # status nie jest sprawdzany, zatem sie go tylko wypisuje
@@ -64,7 +65,8 @@ def camera():
 
 @app.route('/photos')
 def photos():
-    print("zdjecia")
+    print("zdjecia <\br>")
+	print('<a href="static/test.jpg"> Tu </a>') 
     #zdjęcia dostępne pod /static/test.jpg
     #implementacja
     return ""

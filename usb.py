@@ -2,28 +2,28 @@ import serial
 
 class usb:
     ser = serial.Serial
-    def open(): # otwiera polaczenie;stale wartosci, mozna sparametryzowac
+    def open(self): # otwiera polaczenie;stale wartosci, mozna sparametryzowac
         self.ser = serial.Serial ("/dev/ttyACM0")    #Open named port
         self.ser.baudrate = 9600                     #Set baud rate to 9600
 
 
-    def write(order): # Pisze na usb pojedyncza linie
+    def write(self, order): # Pisze na usb pojedyncza linie
         self.ser.write(order.encode)
 
 
-    def send(orders): # wysyla liste orders z dodanym znakiem konca "$"
+    def send(self, orders): # wysyla liste orders z dodanym znakiem konca "$"
         for i in orders:
             write(i.encode())
         write(b"$") # koniec polecenia
 
 
-    def read(): # czeka i zwraca pojedyncza odpowiedz (linie)
+    def read(self): # czeka i zwraca pojedyncza odpowiedz (linie)
         data = self.ser.readline()
         # print(out)
         return data.decode()  # Zwraca odpowiedz przekonwertowana na stringa
 
 
-    def receive(): # czeka, wczytuje do "$" i zwraca wszysstkie komunikaty jako liste (bez "$").
+    def receive(self): # czeka, wczytuje do "$" i zwraca wszysstkie komunikaty jako liste (bez "$").
         data = []
         last = read()
         while last != "$":
@@ -33,5 +33,5 @@ class usb:
 
 
 
-    def close(): # zamkniecie polaczenia po usb
+    def close(self): # zamkniecie polaczenia po usb
        self.ser.close()
