@@ -8,27 +8,29 @@ class usb:
 
 
     def write(self, order): # Pisze na usb pojedyncza linie
-        self.ser.write(order.encode)
+        self.ser.write(order.encode())
 
 
     def send(self, orders): # wysyla liste orders z dodanym znakiem konca "$"
         for i in orders:
-            self.write(i.encode())
-        self.write(b"$") # koniec polecenia
+            self.write(i)
+        self.write('E') # koniec polecenia
 
 
     def read(self): # czeka i zwraca pojedyncza odpowiedz (linie)
         data = self.ser.readline()
-        # print(out)
+        print(data)
         return data.decode()  # Zwraca odpowiedz przekonwertowana na stringa
 
 
     def receive(self): # czeka, wczytuje do "$" i zwraca wszysstkie komunikaty jako liste (bez "$").
         data = []
         last = self.read()
-        while last != "$":
-            data = data + last
+        while last != 'E\r\n':
+            data.append(last)
             last = self.read()
+            print(last)
+        print("Koniec")
         return data
 
 

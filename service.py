@@ -2,7 +2,7 @@ from flask import Flask
 import os
 from usb import usb
 app = Flask(__name__)
-arduino_connect = usb
+arduino_connect = usb()
 
 @app.route('/forward')
 def forward(): # przesyla polecenie jazdy do przodu (f) i dystans (w metrach), nastepnie czeka na odpowiedz
@@ -13,12 +13,12 @@ def forward(): # przesyla polecenie jazdy do przodu (f) i dystans (w metrach), n
     orders = ["f", distance]
     arduino_connect.send(orders)
     status = arduino_connect.receive()
-    print(status) # status nie jest sprawdzany, zatem sie go tylko wypisuje
+    print("chuj",status) # status nie jest sprawdzany, zatem sie go tylko wypisuje
     # if status != distance:
        #  print("Error")
     # else:
         # print("Ok")
-    return ""
+    return "forward"
 
 @app.route('/left')
 def left(): # przesyla polecenie skretu w lewo (l) i kat (w stopniach), nastepnie czeka na odpowiedz
@@ -38,7 +38,7 @@ def right(): # przesyla polecenie skretu w lewo (l) i kat (w stopniach), nastepn
     print("skrecamy w prawo")
     angle = "90" # tymczasowo kat jest staly i ignowrowany
     orders = ["r", angle]
-    arduino_connect.angle(orders)
+    arduino_connect.send(orders)
     status = arduino_connect.receive()
     print(status) # status nie jest sprawdzany, zatem sie go tylko wypisuje
     return ""
@@ -54,6 +54,55 @@ def backward(): # przesyla polecenie jazdy do tylu (b) i dystans (w metrach), na
     status = arduino_connect.receive()
     print(status) # status nie jest sprawdzany, zatem sie go tylko wypisuje
     return ""
+
+@app.route('/p')
+def serwop(): # przesyla polecenie skretu w lewo (l) i kat (w stopniach), nastepnie czeka na odpowiedz
+    print("serwo w prawo")
+
+    #implementacja
+    angle = "0" # tymczasowo kat jest staly i ignowrowany
+    orders = ["p", angle]
+    arduino_connect.send(orders)
+    status = arduino_connect.receive()
+    print(status) # status nie jest sprawdzany, zatem sie go tylko wypisuje
+
+    return ""
+
+@app.route('/q')
+def serwoq(): # przesyla polecenie skretu w lewo (l) i kat (w stopniach), naste$
+    print("serwo w lewo")
+
+    #implementacja
+    angle = "0" # tymczasowo kat jest staly i ignowrowany
+    orders = ["q", angle]
+    arduino_connect.send(orders)
+    status = arduino_connect.receive()
+    print(status) # status nie jest sprawdzany, zatem sie go tylko wypisuje
+
+    return ""
+
+@app.route('/s')
+def serwos(): # przesyla polecenie skretu w lewo (l) i kat (w stopniach), naste$
+    print("serwo w prawo")
+
+    #implementacja
+    angle = "0" # tymczasowo kat jest staly i ignowrowany
+    orders = ["s", angle]
+    arduino_connect.send(orders)
+    status = arduino_connect.receive()
+    print(status) # status nie jest sprawdzany, zatem sie go tylko wypisuje
+
+    return ""
+
+
+@app.route('/test')
+def test():
+    orders = ["p"]
+    arduino_connect.send(orders)
+    status = arduino_connect.receive()
+    print(status) # status nie jest sprawdzany, zatem sie go tylko wypisuje
+    return ""
+
 
 @app.route('/camera')
 def camera():
@@ -71,6 +120,6 @@ def photos():
     return ""
 
 if __name__ == '__main__':
-    # arduino_connect.open()
+    arduino_connect.open()
     app.run(host='0.0.0.0')
 
