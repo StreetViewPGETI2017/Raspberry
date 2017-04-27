@@ -3,6 +3,7 @@ import os
 from usb import Usb
 import numpy as np
 import auto
+# import picamera
 app = Flask(__name__)
 arduino_connect = Usb()
 
@@ -127,11 +128,11 @@ def single_shot(name="test"):  # wykonuje pojedyncze zdjecie i zapisuje je w kat
     # pod nazwą podaną jako argument -- string name
     print("robimy zdjecia")
     # command = "raspistill -n -t 1 -o static/"+name+".jpg"  # sekundowe opóźnienie
-    command = "raspistill -n -t -o static/"+name+".jpg"  # natychmiast
-
+    command = "raspistill -n -t 1 -vf -hf -o static/"+name+".jpg"  # natychmiast
+    # todo zastapic raspistill - picamera, zmienic czas na wiekszy i sprawdzic czy wyjda lepsze zdjecia
     os.system(command)  # wywołujemy raspistill który wykonuje zdjęcie
     print("zrobiono zdjecie")
-    return "zz"  # zdjecie zrobione
+    return "photo"  # zdjecie zrobione
 
 
 @app.route('/camera')
@@ -149,22 +150,22 @@ def round_camera(turns=10):  # Wykonuje pełen obrót kamerą i zdjęcia wokół
 
 @app.route('/photos')  # Pokazuje linki do zdjęć, można zrobić coś sprytniejszego
 def photos():
-    print("Pojedyncze: <\\br>")
-    print('<a href="static/test.jpg"> Tu </a>')
-    print("Pełne koło: <\\br>")
+    returnstring = ""
+    returnstring += "Pojedyncze: <br>"
+    returnstring += '<a href="static/test.jpg"> Tutaj </a><br>'
+    returnstring += "Pełne koło: <br>"
     for i in range(10):
         name = str(i)
-        print('<a href="static/'+name+'.jpg">'+name+'</a>')
-    # implementacja
-    return ""
+        returnstring += '<a href="static/'+name+'.jpg">'+name+'</a><br>'
+    return returnstring
 
 @app.route('/autodemo')
-def backward():  # przesyla polecenie jazdy do tylu (b) i dystans (w metrach), nastepnie czeka na odpowiedz
+def autodemo():  # przesyla polecenie jazdy do tylu (b) i dystans (w metrach), nastepnie czeka na odpowiedz
     print("Robot jest poza kontrolą")
     robot = auto.Driver(usb_connect=arduino_connect)
     robot.run(np.array[100, 20])
 
-    return "backward"
+    return "auto"
 
 
 if __name__ == '__main__':
