@@ -5,14 +5,6 @@ import numpy as np
 import math
 import time
 
-def decompose(txt):
-    rest, txt = txt.split("(")
-    txt = txt.strip(")")
-
-    front, right, left = txt.split(",")
-    return int(front), int(right), int(left)
-
-# print(decompose("s(11,12,13)"))
 
 # Klasa reprezentujaca stan otaczajacego swiata
 class World(object):
@@ -73,6 +65,7 @@ class World(object):
         INF = 999999999
 
         def relax(old, x, y):
+            # TODO: heurystyka
             new_cost = closed_cost[old] + 1
             if open_cost[x, y] > new_cost and closed_cost[x, y] == INF and self.can_go((x, y)):
                 open_cost[x, y] = new_cost
@@ -171,11 +164,10 @@ def angle_to_vector(degree):
 
 # Klasa reprezentujaca jeżdżącego robota. Operuje na pozycjach, nie indeksach!
 class Driver(object):
-    def __init__(self, arduino_connect, world=None):
+    def __init__(self, world=None):
         if world is None:
             world = World(40, 40, 25, 25)
         self.world = world
-        self.arduino_connect = arduino_connect
         # Zakładamy, że to jedyny driver, ale można zmodyfikować na wielu agentów
         self.position = self.world.get_center_position()
         self.position = np.array(self.position)
@@ -191,133 +183,70 @@ class Driver(object):
 
     def run(self, destination):
         path = self.find_path(destination)
-        if path is None:
-            return
-        while not path.empty():
-            self.move(path[0])
-            path = self.find_path(destination)
+        for p in path:
+            self.move(p)
 
     # może zrobić wersję move(path)?
     def move(self, destination):
         diff = destination - self.position
         # print(diff, angle(diff), length(diff))
         self.turn(angle(diff))
-        self.pause(10)
         self.forward(length(diff))
-        self.pause(10)
-        self.handle_observations()
-        self.pause(10)
-
 
     def forward(self, distance):
-        # # Wersja wirtualna:
+        # Wersja wirtualna:
         direction = angle_to_vector(self.rotation)
-        # diff = [direction[0] * distance, direction[1] * distance]
-        # diff = np.array(diff)
-        # # self.position += (distance * direction)
-        # self.position = np.add(self.position, diff)
-        #Wersja realna:
-        orders = ["f", str(distance)]
-        self.arduino_connect.send(orders)
-        status = self.arduino_connect.receive()
-        # TODO  zapisać self.position
-        # Optymistycznie, do wywalenia :(
-        self.position += (distance * direction)
+        diff = [direction[0] * distance, direction[1] * distance]
+        diff = np.array(diff)
+        # self.position += (distance * direction)
+        self.position = np.add(self.position, diff)
+        pass
 
     def turn(self, degrees):
-        # # Wersja wirtualna:
-        # # print(self.rotation)
-        # self.rotation = degrees
-        # # print(self.rotation)
-        diff = degrees - self.rotation
-        while diff < 0:
-            diff += 360
-        while diff > 360:
-            diff -= 360
-        if diff > 180:
-            diff -= 180
-            orders = ["l", str(diff)]
-        else:
-            orders = ["r", str(diff)]
-        self.arduino_connect.send(orders)
-        status = self.arduino_connect.receive()
-
-        # Optymistycznie, do wywalenia :(
+        # Wersja wirtualna:
+        # print(self.rotation)
         self.rotation = degrees
-        # TODO ogarnac status
-        # self.rotation = ?
-        # self.position = ?
-
-        # Wersja realna:
+        # print(self.rotation)
         pass
-        #TODO zrobić obrót i zapisać self.rotation
-
 
     def pause(self, seconds):
         time.sleep(seconds)
 
     def handle_observations(self):
-        orders = ["s"]
-        self.arduino_connect.send(orders)
-        status = self.arduino_connect.receive()
-        print(status)
-        # s(pr,pra,l)E
-        # TODO pobrać trzy obserwacje i użyć poniższej funkcji
-        front, right, left = decompose(status) # odleglosci
-        self.set_observation_obstacle(front, 0)
-        self.set_observation_obstacle(right, 1)
-        self.set_observation_obstacle(left, 2)
+        pass
 
-    def set_observation_obstacle(self, distance, side):
-        # side = [0, 1, 2]
-        angle = 0
-        angle = self.rotation
-        if side == 0:
-            angle = 0
-        if side == 1:
-            angle = 90
-        if side == 2:
-            angle = -90
-        direction = angle_to_vector(angle)
-        diff = [direction[0] * distance, direction[1] * distance]
-        diff = np.array(diff)
-        observation_pos = self.position + diff
-
-        # DONE wyifować specjalną wartość
-        special_max_distance = 90
-        if distance < special_max_distance:
-            observation_index = self.world.get_index(observation_pos)
-            self.world.set_obstacle(observation_index)
+    def get_observation_position(self):
+        pass
 
     def print(self):
         print(self.position, self.rotation)
 
 
-# robot = Driver()
-# # print(robot.position)
-# # robot.move(np.array([21, 40]))
-# # robot.print()
-#
-# # print
-# robot.world.set_obstacle((3, 2))
-# robot.world.set_obstacle((4, 2))
-# robot.world.set_obstacle((4, 3))
-# robot.world.set_obstacle((4, 1))
-# robot.world.set_obstacle((4, 0))
-# robot.world.set_obstacle((3, 0))
-# robot.world.set_obstacle((3, 3))
-# robot.world.set_obstacle((3, 4))
-# robot.world.print()
-#
-# robot.move(np.array([2, 2]))
+robot = Driver()
+# print(robot.position)
+# robot.move(np.array([21, 40]))
 # robot.print()
-# dest_pos = robot.world.get_position(np.array([6, 2]))
-# robot.run(dest_pos)
+
+# print
+robot.world.set_obstacle((3, 2))
+robot.world.set_obstacle((4, 2))
+robot.world.set_obstacle((4, 3))
+robot.world.set_obstacle((4, 1))
+robot.world.set_obstacle((4, 0))
+robot.world.set_obstacle((3, 0))
+robot.world.set_obstacle((3, 3))
+robot.world.set_obstacle((3, 4))
+robot.world.print()
+
+robot.move(np.array([2, 2]))
+robot.print()
+dest_pos = robot.world.get_position(np.array([6, 2]))
+robot.run(dest_pos)
+
+# path = (robot.world.shortest_path(np.array([2, 2]), np.array([6, 2])))
+# for i in path:
+#     print(i)
+#     robot.move(i)
+#     robot.print()
 #
-# # path = (robot.world.shortest_path(np.array([2, 2]), np.array([6, 2])))
-# # for i in path:
-# #     print(i)
-# #     robot.move(i)
-# #     robot.print()
-# #
-# robot.print()
+robot.print()

@@ -1,6 +1,8 @@
 from flask import Flask
 import os
 from usb import Usb
+import numpy as np
+import auto
 app = Flask(__name__)
 arduino_connect = Usb()
 
@@ -139,7 +141,6 @@ def round_camera(turns=10):  # Wykonuje pełen obrót kamerą i zdjęcia wokół
 
     # Póki co, czekam aż Arduino zacznie zwracać i przyjmować kąty, o jakie kamera się obróciła.
     # Do tego czasu tymczasowe rozwiązanie.
-    # NIEPRZETESTOWANE na robocie
     for i in range(turns):
         name = str(i)
         single_shot(name)  # natychmiast wykonaj i zapisz zdjęcie.
@@ -156,6 +157,14 @@ def photos():
         print('<a href="static/'+name+'.jpg">'+name+'</a>')
     # implementacja
     return ""
+
+@app.route('/autodemo')
+def backward():  # przesyla polecenie jazdy do tylu (b) i dystans (w metrach), nastepnie czeka na odpowiedz
+    print("Robot jest poza kontrolą")
+    robot = auto.Driver(usb_connect=arduino_connect)
+    robot.run(np.array[100, 20])
+
+    return "backward"
 
 
 if __name__ == '__main__':
