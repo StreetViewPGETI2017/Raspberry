@@ -5,7 +5,7 @@ class Usb:
     ser = serial.Serial
 
     def open(self):  # otwiera polaczenie;stale wartosci, mozna sparametryzowac
-        #self.ser = serial.Serial("/dev/ttyACM0")    # Domyślne urządzenie
+        self.ser = serial.Serial("/dev/ttyACM0")    # Domyślne urządzenie
         self.ser.baudrate = 9600                     # Domyślne wartości
 
     def write(self, order):  # Pisze na usb pojedyncza linie
