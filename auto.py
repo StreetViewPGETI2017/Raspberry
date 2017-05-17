@@ -1,4 +1,5 @@
 # from usb import Usb
+
 # import service
 
 import numpy as np
@@ -6,12 +7,25 @@ import math
 import time
 
 def decompose(txt):
-    rest, txt = txt.split("(")
+    txt = txt[1]
+    txt = txt.strip()
+    txt = txt.strip("(")
+    # 	rest, txt = txt.("(")
     txt = txt.strip(")")
-
+    # print(txt)
     front, right, left = txt.split(",")
     return int(front), int(right), int(left)
 
+class LicznikMiejsca():
+    def __init__(self, index):
+        self.index = index
+    def cokolwiek(self):
+        while True:
+            #time.sleep(2)
+            for i in range(10000):
+                pass
+            self.index.increment_sfera()
+          
 # print(decompose("s(11,12,13)"))
 
 # Klasa reprezentujaca stan otaczajacego swiata
@@ -27,6 +41,7 @@ class World(object):
         self.matrix = np.zeros((x_size, y_size))  # zera oznaczają puste pozycje
 
     def get_index(self, pos):
+        # print(pos, type(pos))
         index_x = pos[0] // self.unit_x_size
         if index_x >= self.x_size:
             index_x = None
@@ -172,42 +187,65 @@ def angle_to_vector(degree):
 # Klasa reprezentujaca jeżdżącego robota. Operuje na pozycjach, nie indeksach!
 class Driver(object):
     def __init__(self, arduino_connect, world=None):
+        
         if world is None:
-            world = World(40, 40, 25, 25)
+            world = World(800, 800, 40, 40)
         self.world = world
         self.arduino_connect = arduino_connect
         # Zakładamy, że to jedyny driver, ale można zmodyfikować na wielu agentów
         self.position = self.world.get_center_position()
-        self.position = np.array(self.position)
+        # self.position = np.array(self.position)
         self.rotation = 0  # stopni
 
     def find_path(self, destination):
         destination_index = self.world.get_index(destination)
         # destination_index = destination
         own_index = self.world.get_index(self.position)
-        path = self.world.shortest_path(own_index, destination_index)
-
+        print("\t",own_index, destination_index)
+        if own_index[0] == destination_index[0] and own_index[1] == destination_index[1]:
+            path = None
+            print("Meta")
+        else:
+            path = self.world.shortest_path(own_index, destination_index)
+        # for p in path:
+            # p = self.world.get_position(p)
         return path
 
     def run(self, destination):
+        self.handle_observations()
+        self.print_surrounding_map()
         path = self.find_path(destination)
+        print(path)
         if path is None:
             return
-        while not path.empty():
-            self.move(path[0])
-            path = self.find_path(destination)
+        else:
+            print("RUN")
+            # print(self.position)
+            # print(path[0])
+            next = self.world.get_position(path[0])
+            print(next)
+            self.move(next)
+            self.world.print()
+            self.run(destination)
+        # while not path:
+            # self.move(path[0])
+            # path = self.find_path(destination)
 
     # może zrobić wersję move(path)?
     def move(self, destination):
+        print(destination, self.position)
+        print("lol")
         diff = destination - self.position
-        # print(diff, angle(diff), length(diff))
-        self.turn(angle(diff))
-        self.pause(10)
-        self.forward(length(diff))
-        self.pause(10)
-        self.handle_observations()
-        self.pause(10)
+        print(diff, angle(diff), length(diff))
+        self.krzysiek_turn(angle(diff))
+        # self.pause(10)
+        self.mateusz_forward(length(diff))
+        # self.pause(10)
+        # self.handle_observations()
+        # self.pause(10)
 
+    def mateusz_forward(self, distance):
+        self.forward(round(distance))
 
     def forward(self, distance):
         # # Wersja wirtualna:
@@ -218,32 +256,65 @@ class Driver(object):
         # self.position = np.add(self.position, diff)
         #Wersja realna:
         orders = ["f", str(distance)]
+        print(orders)
         self.arduino_connect.send(orders)
         status = self.arduino_connect.receive()
+        # print(status)
         # TODO  zapisać self.position
         # Optymistycznie, do wywalenia :(
-        self.position += (distance * direction)
+        status = status[-1]
+        status = status.rstrip()
+        print("Ruch do przodu: ",status)
+        real_dist = float(status)
+        self.position += (real_dist * direction)
+        # self.position += (distance * direction)
+
+    def krzysiek_turn(self, degrees):
+        degrees = degrees - self.rotation
+        if(degrees > 0):
+            while(degrees > 15):
+                degrees -= 30
+                print("prawo", degrees)
+                self.turn(30)
+        else:
+            while(degrees < -15):
+                degrees += 30
+                print("lewo", degrees)
+                self.turn(-30)
 
     def turn(self, degrees):
         # # Wersja wirtualna:
         # # print(self.rotation)
         # self.rotation = degrees
         # # print(self.rotation)
-        diff = degrees - self.rotation
+        # diff = degrees - self.rotation
+        diff = degrees # zmienione w krzyiek_turn()
         while diff < 0:
             diff += 360
         while diff > 360:
             diff -= 360
         if diff > 180:
             diff -= 180
-            orders = ["l", str(diff)]
+            orders = ["l", str(round(diff))]
+            rtrn = False
         else:
-            orders = ["r", str(diff)]
+            orders = ["r", str(round(diff))]
+            rtrn = True
+        # print(diff)
+        # print(orders)
+        # print("-----")
         self.arduino_connect.send(orders)
         status = self.arduino_connect.receive()
-
+        # print(status)
+        status = status[-1]
+        status = status.rstrip()
+        real_angle = float(status)
+        print(real_angle)
         # Optymistycznie, do wywalenia :(
-        self.rotation = degrees
+        if rtrn:
+            self.rotation += real_angle
+        else:
+            self.rotation -= real_angle
         # TODO ogarnac status
         # self.rotation = ?
         # self.position = ?
@@ -260,16 +331,30 @@ class Driver(object):
         orders = ["s"]
         self.arduino_connect.send(orders)
         status = self.arduino_connect.receive()
-        print(status)
+        # print(status)
         # s(pr,pra,l)E
         # TODO pobrać trzy obserwacje i użyć poniższej funkcji
         front, right, left = decompose(status) # odleglosci
+        print(front, right, left)
         self.set_observation_obstacle(front, 0)
         self.set_observation_obstacle(right, 1)
         self.set_observation_obstacle(left, 2)
 
+    def print_surrounding_map(self):
+        index = self.world.get_index(self.position)
+        x = index[0]
+        y = index[1]
+        for i in range(-5, 5, 1):
+            for j in range(-5, 5, 1):
+                if i == 0 and j == 0:
+                    print("X", end=" ")
+                elif self.world.is_index_inside(x+j, y+i):
+                    print(int(self.world.matrix[x+j, y+i]), end=" ")
+            print()
+
     def set_observation_obstacle(self, distance, side):
         # side = [0, 1, 2]
+        # return
         angle = 0
         angle = self.rotation
         if side == 0:
@@ -284,10 +369,11 @@ class Driver(object):
         observation_pos = self.position + diff
 
         # DONE wyifować specjalną wartość
-        special_max_distance = 90
-        if distance < special_max_distance:
-            observation_index = self.world.get_index(observation_pos)
-            self.world.set_obstacle(observation_index)
+        special_max_distance = 100
+        special_min_distance = 5
+        if distance < special_max_distance and distance > special_min_distance:
+            # observation_index = self.world.get_index(observation_pos)
+            self.world.set_obstacle(observation_pos)
 
     def print(self):
         print(self.position, self.rotation)
@@ -321,3 +407,4 @@ class Driver(object):
 # #     robot.print()
 # #
 # robot.print()
+
