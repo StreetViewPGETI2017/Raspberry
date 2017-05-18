@@ -5,6 +5,7 @@
 import numpy as np
 import math
 import time
+from service import round_camera
 
 def decompose(txt):
     txt = txt[1]
@@ -191,6 +192,8 @@ class Driver(object):
         if world is None:
             world = World(800, 800, 40, 40)
         self.world = world
+        self.distance = 0  # dystans przebyty od ostatniego zdjęcia
+        self.photo_distance = 200  # dystans, po którym należy robić zdjęcie
         self.arduino_connect = arduino_connect
         # Zakładamy, że to jedyny driver, ale można zmodyfikować na wielu agentów
         self.position = self.world.get_center_position()
@@ -227,6 +230,7 @@ class Driver(object):
             self.move(next)
             self.world.print()
             self.run(destination)
+            self.handle_observations()
         # while not path:
             # self.move(path[0])
             # path = self.find_path(destination)
@@ -243,6 +247,11 @@ class Driver(object):
         # self.pause(10)
         # self.handle_observations()
         # self.pause(10)
+
+    def handle_photos(self):
+        if self.distance > self.photo_distance:
+            self.distance = 0
+            round_camera()
 
     def mateusz_forward(self, distance):
         self.forward(round(distance))
@@ -266,6 +275,7 @@ class Driver(object):
         status = status.rstrip()
         print("Ruch do przodu: ",status)
         real_dist = float(status)
+        self.distance += real_dist
         self.position += (real_dist * direction)
         # self.position += (distance * direction)
 
@@ -316,6 +326,7 @@ class Driver(object):
         else:
             self.rotation -= real_angle
         # TODO ogarnac status
+        # status.
         # self.rotation = ?
         # self.position = ?
 

@@ -221,6 +221,17 @@ class Driver(object):
     def print(self):
         print(self.position, self.rotation)
 
+    def print_surrounding_map(self):
+        index = self.world.get_index(self.position)
+        x = index[0]
+        y = index[1]
+        for i in range(-5, 5, 1):
+            for j in range(-5, 5, 1):
+                if self.world.is_index_inside(x+i, y+j):
+                    print(self.world.matrix[x+i, y+j], end=" ")
+                print()
+
+
 
 robot = Driver()
 # print(robot.position)
