@@ -6,6 +6,7 @@ import numpy as np
 import math
 import time
 from service import round_camera
+from flagi import Flagi
 
 def decompose(txt):
     txt = txt[1]
@@ -15,18 +16,8 @@ def decompose(txt):
     txt = txt.strip(")")
     # print(txt)
     front, right, left = txt.split(",")
-    return int(front), int(right), int(left)
+    return float(front), float(right), float(left)
 
-class LicznikMiejsca():
-    def __init__(self, index):
-        self.index = index
-    def cokolwiek(self):
-        while True:
-            #time.sleep(2)
-            for i in range(10000):
-                pass
-            self.index.increment_sfera()
-          
 # print(decompose("s(11,12,13)"))
 
 # Klasa reprezentujaca stan otaczajacego swiata
@@ -188,10 +179,11 @@ def angle_to_vector(degree):
 # Klasa reprezentujaca jeżdżącego robota. Operuje na pozycjach, nie indeksach!
 class Driver(object):
     def __init__(self, arduino_connect, world=None):
-        
+        # print(flags.pc_status)
         if world is None:
             world = World(800, 800, 40, 40)
         self.world = world
+        self.flags = Flagi()
         self.distance = 0  # dystans przebyty od ostatniego zdjęcia
         self.photo_distance = 200  # dystans, po którym należy robić zdjęcie
         self.arduino_connect = arduino_connect
@@ -208,6 +200,7 @@ class Driver(object):
         if own_index[0] == destination_index[0] and own_index[1] == destination_index[1]:
             path = None
             print("Meta")
+            #self.flags.autostop()
         else:
             path = self.world.shortest_path(own_index, destination_index)
         # for p in path:
@@ -252,6 +245,7 @@ class Driver(object):
         if self.distance > self.photo_distance:
             self.distance = 0
             round_camera()
+            self.flags.increment_sfera()
 
     def mateusz_forward(self, distance):
         self.forward(round(distance))
@@ -277,6 +271,7 @@ class Driver(object):
         real_dist = float(status)
         self.distance += real_dist
         self.position += (real_dist * direction)
+        self.handle_photos()
         # self.position += (distance * direction)
 
     def krzysiek_turn(self, degrees):
@@ -340,6 +335,7 @@ class Driver(object):
 
     def handle_observations(self):
         orders = ["s"]
+        print("Obserwacje:")
         self.arduino_connect.send(orders)
         status = self.arduino_connect.receive()
         # print(status)
@@ -369,11 +365,11 @@ class Driver(object):
         angle = 0
         angle = self.rotation
         if side == 0:
-            angle = 0
+            angle += 0
         if side == 1:
-            angle = 90
+            angle += 90
         if side == 2:
-            angle = -90
+            angle += -90
         direction = angle_to_vector(angle)
         diff = [direction[0] * distance, direction[1] * distance]
         diff = np.array(diff)

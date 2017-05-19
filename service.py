@@ -1,46 +1,47 @@
-from flask import Flask
 import os
 import threading
-from usb import Usb
+
 import numpy as np
+from flask import Flask
+
 import auto
+from flagi import Flagi
+from usb import Usb
+
 app = Flask(__name__)
 arduino_connect = Usb()
 arduino_connect.open()
 auto_log = "Start:\n"
 
-class Flagi():
-    def __init__(self):
-        self.numer_sfery = 0 # flaga informujaca o numerze sfery dla ktorej przeznaczone sa zdjecia na raspberry
-        self.auto_jazda = 0 # flaga informujaca o trwaniu autonomicznego przejazdu
-        self.error = 0 # flaga dla ewentualnej obslugi bledow
-    def increment_sfera(self):
-        self.numer_sfery += 1
+flags = Flagi()  # obiekt przechowujacy flagi
 
-    def auto_start(self):
-        self.auto_jazda = 1
 
-    def auto_stop(self):
-        self.auto_jazda = 0
+@app.route('/pcready')
+def pc_read():
+    flags.read_flags()
+    flags.pc_status(1)
+    return "pc ready"
 
-    def set_error(self,error):
-        self.error = error
 
-    def reset_error(self):
-        self.error = 0
-flags = Flagi() # obiekt przechowujacy flagi
-
-@app.route('/numersfery') # zwracamy aktualny stan licznika miejsca w ktorym robione jest zdjecie 360
+@app.route('/numersfery')  # zwracamy aktualny stan licznika miejsca w ktorym robione jest zdjecie 360
 def numer_sfery():
+    flags.read_flags()
+    print("Numer sfery ", flags.numer_sfery)
     return str(flags.numer_sfery)
 
-@app.route('/flagaauto') # zwracamy flage informujaca o trwaniu przejazdu autonomicznego: 0 - nie jedziemy, 1 - robot jedzie
+
+@app.route(
+    '/flagaauto')  # zwracamy flage informujaca o trwaniu przejazdu autonomicznego: 0 - nie jedziemy, 1 - robot jedzie
 def flaga_auto():
+    flags.read_flags()
     return str(flags.auto_jazda)
 
-@app.route('/flagaerror') # zwracamy flage informującą o bledach, do przyszlego uzytku
+
+@app.route('/flagaerror')  # zwracamy flage informującą o bledach, do przyszlego uzytku
 def flaga_error():
+    flags.read_flags()
     return str(flags.error)
+
 
 # Tymczasowo Arduino ignoruje przesyłane wartości przemieszczeń i kątów, więc są podawane dowolne.
 # Tymczasowo nie można założyć, że Arduino zwraca informacje o dokonanym przemieszczeniu lub obrocie,
@@ -161,8 +162,8 @@ def test():
 def single_shot(name="test"):  # wykonuje pojedyncze zdjecie i zapisuje je w katalogu static,
     # pod nazwą podaną jako argument -- string name
     print("robimy zdjecia")
-    # command = "raspistill -n -t 1 -o static/"+name+".jpg"  # sekundowe opóźnienie
-    command = "raspistill -n -vf -hf -t 1 -o static/"+name+".jpg"  # natychmiast
+    # command = "raspistill -n -t 1 -o static/"+name+".jpg"  # sekundowe opóźnienie, vs - stabilizacja
+    command = "raspistill -n -w 1920 -h 1080 -vf -hf -vs -t 1 -o static/" + name + ".jpg"  # natychmiast
 
     os.system(command)  # wywołujemy raspistill który wykonuje zdjęcie
     print("zrobiono zdjecie")
@@ -176,21 +177,27 @@ def round_camera(turns=16):  # Wykonuje pełen obrót kamerą i zdjęcia wokół
 
     # Póki co, czekam aż Arduino zacznie zwracać i przyjmować kąty, o jakie kamera się obróciła.
     # Do tego czasu tymczasowe rozwiązanie.
+    while flags.pc_ready == 0:  # czekamy az pc pobierze stare zdjecia i ustawi flage ready
+        pass
+
     for i in range(turns):
         name = str(i)
         single_shot(name)  # natychmiast wykonaj i zapisz zdjęcie.
         camera_right()  # może być i left(), jeśli to będzie miało znaczenie
 
-    for j in range(turns): # obrocenie raspberry na pierwotna pozycje
+    for j in range(turns):  # obrocenie raspberry na pierwotna pozycje
         camera_left()
 
-    flags.increment_sfera() # zwiekszamy licznik gdy zdjecia gotowe aby PC moglo zaczac czytac zdjecia
+    flags.increment_sfera()  # zwiekszamy licznik gdy zdjecia gotowe aby PC moglo zaczac czytac zdjecia
+    flags.pc_status(0)  # ustawiamy flage na 0 - pc sciaga zdjecia i jest niegotowe
+
 
 @app.route('/cameraflaga')
 def cameraflaga():
-   print(flags)
-   print("Zwrocono index: ", flags.numer_sfery)
-   return "zdjecie "
+    print(flags)
+    print("Zwrocono index: ", flags.numer_sfery)
+    return "zdjecie "
+
 
 @app.route('/photos')  # Pokazuje linki do zdjęć, można zrobić coś sprytniejszego
 def photos():
@@ -199,9 +206,10 @@ def photos():
     print("Pełne koło: <\\br>")
     for i in range(16):
         name = str(i)
-        print('<a href="static/'+name+'.jpg">'+name+'</a>')
+        print('<a href="static/' + name + '.jpg">' + name + '</a>')
     # implementacja
     return ""
+
 
 @app.route('/log')
 def log():
@@ -212,35 +220,40 @@ def log():
 @app.route('/cok')
 def cok():
     coko = auto.LicznikMiejsca(flags)
-    threading.Thread(target=coko.cokolwiek).start() # testujemy dzialanie watkow
+    threading.Thread(target=coko.cokolwiek).start()  # testujemy dzialanie watkow
     return "lol"
+
 
 @app.route('/auto_test')
 def auto_test():
     print("Test:")
-    robot = auto.Driver(arduino_connect = arduino_connect)
-    
+    flags.auto_start()
+    robot = auto.Driver(arduino_connect=arduino_connect)
+
     print(robot.position)
-    dest = np.array([350,0])
+    dest = np.array([350, 0])
     dest = robot.position + dest
     print(dest, type(dest))
-    #robot.turn(45)
-    #robot.forward(5)
-    robot.run(dest)     # TODO odpalenie jazdy w osobnym wątku
+    # robot.turn(45)
+    # robot.forward(5)
+    watek = threading.Thread(target=robot.run, args=[dest])  # TODO odpalenie jazdy w osobnym wątku
+    watek.daemon = True
+    watek.start()
     print(robot.position)
-    #robot.krzysiek_turn(90)
-    #robot.mateusz_forward(5)
-    #robot.krzysiek_turn(90)
-    #robot.pause(1)
-    #robot.mateusz_forward(5) 
-    #robot.krzysiek_turn(-90)
-    #robot.mateusz_forward(5)
-    #robot.krzysiek_turn(88)
+    # robot.krzysiek_turn(90)
+    # robot.mateusz_forward(5)
+    # robot.krzysiek_turn(90)
+    # robot.pause(1)
+    # robot.mateusz_forward(5)
+    # robot.krzysiek_turn(-90)
+    # robot.mateusz_forward(5)
+    # robot.krzysiek_turn(88)
     # auto_log += "auto"
     return auto_log
 
-#def auto_thread():
-    
+
+# def auto_thread():
+
 
 @app.route('/auto_demo')
 def auto_demo():  # przesyla polecenie jazdy do tylu (b) i dystans (w metrach), nastepnie czeka na odpowiedz
