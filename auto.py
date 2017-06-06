@@ -7,6 +7,8 @@
 import numpy as np
 import math
 import time
+import picamera
+
 from service import round_camera
 from flagi import Flagi
 
@@ -325,13 +327,39 @@ class Driver(object):
     def handle_photos(self):
         if self.distance > self.photo_distance:
             self.distance = 0
-            round_camera()
+
+            while self.flags.pc_ready == 0:  # czekamy az pc pobierze stare zdjecia i ustawi flage ready
+                pass
+
+            angle = "255"  # tymczasowo kat jest staly i ignowrowany
+            for i in range(16):
+                camera = picamera.PiCamera()
+                camera.resolution = (1920, 1080)  # ustawienia kamery
+                camera.hflip = True
+                camera.vflip = True
+                camera.exposure_mode = 'auto'
+                camera.meter_mode = 'average'
+
+                name = str(i)
+                #camera.start_preview()
+
+                camera.capture("static/"+name+".jpg")  # natychmiast wykonaj i zapisz zdjęcie.
+                time.sleep(1)
+                camera.close() # zamykamy camere i czyscimy pamiec gpu
+                orders = ["p", angle]  # obracamy kamera w prawo
+                self.arduino_connect.send(orders)
+                status = self.arduino_connect.receive()
+
+            orders = ["q", angle]
+            for j in range(16):  # obrocenie raspberry na pierwotna pozycje
+                self.arduino_connect.send(orders)
+                status = self.arduino_connect.receive()
+
             self.flags.increment_sfera() # zwiekszamy licznik gdy zdjecia gotowe aby PC moglo zaczac czytac zdjecia
             self.flags.pc_status(0) # ustawiamy flage na 0 - pc sciaga zdjecia i jest niegotowe
             self.flags.update_map(self.world.matrix)
             self.flags.save_map()
 
-            #self.flags.increment_sfera()
 
     def mateusz_forward(self, distance):
         self.forward(round(distance))
