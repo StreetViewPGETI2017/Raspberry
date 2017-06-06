@@ -259,5 +259,5 @@ def auto_wall():  # przesyla polecenie jazdy do tylu (b) i dystans (w metrach), 
 
 if __name__ == '__main__':
     # arduino_connect.open() 
-    app.run(host='0.0.0.0')
+    app.run(host='0.0.0.0',debug=False)
 

@@ -327,24 +327,25 @@ class Driver(object):
     def handle_photos(self):
         if self.distance > self.photo_distance:
             self.distance = 0
-            camera = picamera.PiCamera()
-            camera.resolution = (1920, 1080) # ustawienia kamery
-            camera.hflip = True
-            camera.vflip = True
-            camera.exposure_mode = 'auto'
-            camera.meter_mode = 'average'
 
             while self.flags.pc_ready == 0:  # czekamy az pc pobierze stare zdjecia i ustawi flage ready
                 pass
 
             angle = "255"  # tymczasowo kat jest staly i ignowrowany
             for i in range(16):
+                camera = picamera.PiCamera()
+                camera.resolution = (1920, 1080)  # ustawienia kamery
+                camera.hflip = True
+                camera.vflip = True
+                camera.exposure_mode = 'auto'
+                camera.meter_mode = 'average'
+
                 name = str(i)
                 #camera.start_preview()
 
-                camera.capture(name+".jpg")  # natychmiast wykonaj i zapisz zdjęcie.
-                time.sleep(2)
-
+                camera.capture("static/"+name+".jpg")  # natychmiast wykonaj i zapisz zdjęcie.
+                time.sleep(1)
+                camera.close() # zamykamy camere i czyscimy pamiec gpu
                 orders = ["p", angle]  # obracamy kamera w prawo
                 self.arduino_connect.send(orders)
                 status = self.arduino_connect.receive()
