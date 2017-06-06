@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 import os
 import threading
+import time
 
 import numpy as np
 from flask import Flask
+from flask import request
 
 import auto
 from flagi import Flagi
@@ -190,34 +192,11 @@ def round_camera(turns=16):  # Wykonuje pełen obrót kamerą i zdjęcia wokół
     #flags.increment_sfera() # zwiekszamy licznik gdy zdjecia gotowe aby PC moglo zaczac czytac zdjecia
     #flags.pc_status(0) # ustawiamy flage na 0 - pc sciaga zdjecia i jest niegotowe
 
-@app.route('/cameraflaga')
-def cameraflaga():
-   print(flags)
-   print("Zwrocono index: ", flags.numer_sfery)
-   return "zdjecie "
-
-@app.route('/photos')  # Pokazuje linki do zdjęć, można zrobić coś sprytniejszego
-def photos():
-    print("Pojedyncze: <\\br>")
-    print('<a href="static/test.jpg"> Tu </a>')
-    print("Pełne koło: <\\br>")
-    for i in range(16):
-        name = str(i)
-        print('<a href="static/'+name+'.jpg">'+name+'</a>')
-    # implementacja
-    return ""
-
 @app.route('/log')
 def log():
     print(auto_log)
     return auto_log
 
-
-@app.route('/cok')
-def cok():
-    coko = auto.LicznikMiejsca(flags)
-    threading.Thread(target=coko.cokolwiek).start() # testujemy dzialanie watkow
-    return "lol"
 
 @app.route('/auto_test')
 def auto_test():
@@ -231,38 +210,35 @@ def auto_test():
     print(dest, type(dest))
     #robot.turn(45)
     #robot.forward(5)
-    watek = threading.Thread(target = robot.run, args = [dest])     # TODO odpalenie jazdy w osobnym wątku
+    watek = threading.Thread(target = robot.run, args = [dest])
     watek.daemon = True
     watek.start()
     print(robot.position)
-    #robot.krzysiek_turn(90)
-    #robot.mateusz_forward(5)
-    #robot.krzysiek_turn(90)
-    #robot.pause(1)
-    #robot.mateusz_forward(5) 
-    #robot.krzysiek_turn(-90)
-    #robot.mateusz_forward(5)
-    #robot.krzysiek_turn(88)
-    # auto_log += "auto"
     return auto_log
 
-#def auto_thread():
-    
 
-@app.route('/auto_wall')
+@app.route('/auto_wall',methods=["POST","GET"])
 def auto_wall():  # przesyla polecenie jazdy do tylu (b) i dystans (w metrach), nastepnie czeka na odpowiedz
     print("Robot jest poza kontrolą")
-    robot = auto.Driver(arduino_connect=arduino_connect)
-#    stacksize = threading.stack_size()
-#    print("Stacksize ", str(stacksize))
-#    threading.stack_size(stacksize*2)
-    watek = threading.Thread(target = robot.follow_wall, args = [15000])
+
+    world_size = int(request.args.get("wielkosc_swiata")) # parametry przekazane z PC
+    cell_size = int(request.args.get("wielkosc_komorki"))
+    photo_distance = int(request.args.get("co_ile_sfera"))
+    distance_to_wall = int(request.args.get("dystans_od_sciany"))
+
+    print("Otrzymano parametry od PC(worldsize,cellsize,photodistance,distancetowall: ",
+          world_size,cell_size,photo_distance,distance_to_wall)
+    robot = auto.Driver(arduino_connect=arduino_connect, x_size= world_size,y_size= world_size,cell= cell_size,
+                        photo_distance= photo_distance) # przekazujemy argumenty
+
+    threading.stack_size(40960000)
+    print("Stacksize: ",threading.stack_size())
+    watek = threading.Thread(target = robot.follow_wall, args = [15000,distance_to_wall])
     watek.daemon = True
     watek.start()
     return "auto"
 
 
 if __name__ == '__main__':
-    # arduino_connect.open() 
-    app.run(host='0.0.0.0')
+    app.run(host='0.0.0.0', debug=False)
 
