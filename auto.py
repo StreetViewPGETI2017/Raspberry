@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # from usb import Usb
 
 # import service
@@ -18,6 +20,12 @@ def decompose(txt):
     front, right, left = txt.split(",")
     return float(front), float(right), float(left)
 
+class LicznikMiejsca():
+    def __init__(self, index):
+        self.index = index
+    def stop(self):
+        self.index.autostop()
+          
 # print(decompose("s(11,12,13)"))
 
 # Klasa reprezentujaca stan otaczajacego swiata
@@ -50,11 +58,16 @@ class World(object):
         return np.array([pos_x, pos_y])
 
     def can_go(self, position):
-        return self.matrix[position] == self.empty
+        return self.matrix[position] != self.obstacle
 
     def set_empty(self, position):
         index_x, index_y = self.get_index(position)
         self.matrix[index_x, index_y] = self.empty
+
+    def set_number(self, position, number):
+        index_x, index_y = self.get_index(position)
+        self.matrix[index_x, index_y] = number
+
 
     def set_obstacle(self, position):
         # print(position)
@@ -125,7 +138,7 @@ class World(object):
                 # góra
                 if self.is_index_inside(c_x, c_y - 1):
                     relax(candidate_pos, c_x, c_y - 1)
-                # dół
+                # dół\
                 if self.is_index_inside(c_x, c_y + 1):
                     relax(candidate_pos, c_x, c_y + 1)
 
@@ -178,14 +191,14 @@ def angle_to_vector(degree):
 
 # Klasa reprezentujaca jeżdżącego robota. Operuje na pozycjach, nie indeksach!
 class Driver(object):
-    def __init__(self, arduino_connect, world=None):
+    def __init__(self, arduino_connect, world=None, x_size=6000, y_size=6000):
         # print(flags.pc_status)
         if world is None:
-            world = World(800, 800, 40, 40)
+            world = World(x_size, y_size, 100, 100)
         self.world = world
         self.flags = Flagi()
         self.distance = 0  # dystans przebyty od ostatniego zdjęcia
-        self.photo_distance = 200  # dystans, po którym należy robić zdjęcie
+        self.photo_distance = 800  # dystans, po którym należy robić zdjęcie
         self.arduino_connect = arduino_connect
         # Zakładamy, że to jedyny driver, ale można zmodyfikować na wielu agentów
         self.position = self.world.get_center_position()
@@ -228,6 +241,74 @@ class Driver(object):
             # self.move(path[0])
             # path = self.find_path(destination)
 
+
+    def observations(self):
+        orders = ["s"]
+        print("Obserwacje:")
+        self.arduino_connect.send(orders)
+        status = self.arduino_connect.receive()
+        # print(status)
+        # s(pr,pra,l)E
+        # TODO pobrać trzy obserwacje i użyć poniższej funkcji
+        front, right, left = decompose(status) # odleglosci
+        self.print_surrounding_map()
+        return front, right, left
+
+
+
+    def follow_wall(self, length):
+        distance_passed = 0
+        distance_to_wall = 60
+        margin = 30
+        far_away = 200
+        long_step = 45
+        print("Jednak tu wchodzi")
+        short_step = 10
+        correction_angle = 15 
+        while distance_passed < length:
+            front, right, left = self.observations()
+            print(front, right, left)
+            self.set_observation_obstacle(front, 0)
+            self.set_observation_obstacle(right, 1)
+            self.set_observation_obstacle(left, 2)
+            error = left - distance_to_wall 
+            print(error)
+            
+            if front < 20:
+                self.turn(90)
+
+            elif abs(error) < margin:
+                distance_passed += self.forward(long_step)
+
+            elif left > far_away and front > far_away: # 
+                self.turn(-60)
+                count = 0
+                while left > far_away and count < 3:
+                    front, right, left = self.observations()
+                    self.forward(long_step)
+                    self.turn(-correction_angle)
+                    count += 1
+            elif error < 0:  # oddal sie
+                if front < 0:
+                    #self.turn(-45)
+                    pass
+                else:
+                    self.turn(correction_angle)
+                    distance_passed += self.forward(short_step)
+            elif error > 0:  # przybliz sie
+                if front < 0:
+                    #self.turn(45)
+                    pass
+                else:
+                    self.turn(-correction_angle)
+                    distance_passed += self.forward(long_step)
+            print("Jednak się wiesza.")
+            # self.flags.update_map(self.world.matrix)
+            # self.flags.save_map()
+        print(left, distance_passed)
+    
+    
+    
     # może zrobić wersję move(path)?
     def move(self, destination):
         print(destination, self.position)
@@ -245,7 +326,12 @@ class Driver(object):
         if self.distance > self.photo_distance:
             self.distance = 0
             round_camera()
-            self.flags.increment_sfera()
+            self.flags.increment_sfera() # zwiekszamy licznik gdy zdjecia gotowe aby PC moglo zaczac czytac zdjecia
+            self.flags.pc_status(0) # ustawiamy flage na 0 - pc sciaga zdjecia i jest niegotowe
+            self.flags.update_map(self.world.matrix)
+            self.flags.save_map()
+
+            #self.flags.increment_sfera()
 
     def mateusz_forward(self, distance):
         self.forward(round(distance))
@@ -272,6 +358,7 @@ class Driver(object):
         self.distance += real_dist
         self.position += (real_dist * direction)
         self.handle_photos()
+        return real_dist
         # self.position += (distance * direction)
 
     def krzysiek_turn(self, degrees):
@@ -299,7 +386,7 @@ class Driver(object):
         while diff > 360:
             diff -= 360
         if diff > 180:
-            diff -= 180
+            diff = 360 - diff
             orders = ["l", str(round(diff))]
             rtrn = False
         else:

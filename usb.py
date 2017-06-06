@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import serial
 
 
@@ -18,7 +20,7 @@ class Usb:
 
     def read(self):  # czeka i zwraca pojedyncza odpowiedz (linie)
         data = self.ser.readline()
-        print(data)
+        # print(data)
         return data.decode()  # Zwraca odpowiedz przekonwertowana na stringa
 
     def receive(self):  # czeka, wczytuje do "$" i zwraca wszysstkie komunikaty jako liste (bez "$").
@@ -27,8 +29,8 @@ class Usb:
         while last != 'E\r\n':
             data.append(last)
             last = self.read()
-            print(last)
-        print("Koniec")
+            # print(last)
+        # print("Koniec")
         return data
 
     def close(self):  # zamkniecie polaczenia po usb
