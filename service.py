@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 import threading
+import time
 
 import numpy as np
 from flask import Flask
@@ -213,12 +214,6 @@ def log():
     return auto_log
 
 
-@app.route('/cok')
-def cok():
-    coko = auto.LicznikMiejsca(flags)
-    threading.Thread(target=coko.cokolwiek).start() # testujemy dzialanie watkow
-    return "lol"
-
 @app.route('/auto_test')
 def auto_test():
     print("Test:")
@@ -249,7 +244,7 @@ def auto_test():
 #def auto_thread():
     
 
-@app.route('/auto_wall')
+@app.route('/auto_wall',methods=["POST","GET"])
 def auto_wall():  # przesyla polecenie jazdy do tylu (b) i dystans (w metrach), nastepnie czeka na odpowiedz
     print("Robot jest poza kontrolą")
     robot = auto.Driver(arduino_connect=arduino_connect)
