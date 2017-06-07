@@ -8,10 +8,10 @@ class Flagi():
         self.auto_jazda = 0 # flaga informujaca o trwaniu autonomicznego przejazdu
         self.error = 0 # flaga dla ewentualnej obslugi bledow
         self.pc_ready = 1 # flaga dla PC, czy skonczyli pobierac
-        self.map_width = 60
-        self.map_height = 60
+        self.map_width = 80
+        self.map_height = 80
         self.mapa = np.zeros((self.map_width,self.map_height))
-        self.save_map()
+        #self.save_map()
 
         if Flagi.liczba_obiektow != 0:
             self.read_flags()
@@ -42,12 +42,12 @@ class Flagi():
         print("Zapisano do pliku: ",lista_flag)
         file.close()
 
-    def save_map(self):
+    def save_map(self,map):
         file = open('/home/pi/projekt/static/mapa.txt','w')
         self.clear_file(file)
         for y in range(self.map_height):
             for x in range(self.map_width):
-                file.write(str(int(self.mapa[x,y])))
+                file.write(str(int(map[x,y])))
             file.write("\n")
         file.close()
         print("Zapisano mape do pliku")
@@ -65,7 +65,7 @@ class Flagi():
         return return_map
 
     def update_map(self,map):
-        self.mapa = np.zeros((self.map_width,self.map_height))
+        #self.mapa = np.zeros((self.map_width,self.map_height))
         self.mapa = np.array(map, copy = True)
 
     def pc_status(self,status):

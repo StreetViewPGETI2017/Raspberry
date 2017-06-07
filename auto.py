@@ -126,7 +126,7 @@ class Driver(object):
         #print("Obserwacje:")
         self.arduino_connect.send(orders)
         status = self.arduino_connect.receive()
-        # print(status)
+        print("Obserwacje arduino: ", status)
 
         front, right, left = decompose(status) # odleglosci
         if front < 30:
@@ -134,7 +134,7 @@ class Driver(object):
            self.arduino_connect.send(orders)
            status = self.arduino_connect.receive()
            front, right, left = decompose(status)
-        self.print_surrounding_map()
+        # self.print_surrounding_map()
         print("Sensory(f,r,l): ", front, right, left)
         return front, right, left
 
@@ -147,14 +147,16 @@ class Driver(object):
         margin = 30
         far_away = 200
         long_step = 45
-        short_step = 10
+        short_step = 15
         correction_angle = 15 
         while distance_passed < length:
             front, right, left = self.observations()
+            self.print()
            # print(front, right, left)
             self.set_observation_obstacle(front, 0)
             self.set_observation_obstacle(right, 1)
             self.set_observation_obstacle(left, 2)
+            self.world.set_number(self.position,2)
             error = left - distance_to_wall 
            # print(error)
             
@@ -165,7 +167,12 @@ class Driver(object):
 
             elif abs(error) < margin:
                 print("if nr 2")
-                distance_passed += self.forward(long_step)
+                if left < 40:
+                    distance_passed += self.forward(short_step)
+                    print("krotki krok")
+                else:
+                    distance_passed += self.forward(long_step)
+                    print("dlugi krok")
                 print("pojechalem prosto")
 
             elif left > far_away: 
@@ -173,11 +180,16 @@ class Driver(object):
                 wh = 1
                 self.turn(-60)
                 front, right, left = self.observations()
+                if front >= 45:
+                    distance_passed += self.forward(long_step)
+                else:
+                    distance_passed += self.forward(short_step)
+                front, right, left = self.observations()
                 while left > far_away:
                     print("while nr:", wh)
                     #self.forward(long_step)
-                    distance_passed += self.forward(long_step)
                     self.turn(-correction_angle)
+                    distance_passed += self.forward(long_step)
                     front, right, left = self.observations()
                     wh += 1
             elif error < 0:  # oddal sie
@@ -199,6 +211,7 @@ class Driver(object):
                     self.turn(correction_angle)
 
         print(left, distance_passed)
+        print("\n")
 
     def photo_picam(self, name): # robienie zdjec za pomoca biblioteki picamera
         camera = picamera.PiCamera()
@@ -227,7 +240,7 @@ class Driver(object):
                 print("Robie zdjecie "+name)
 
                 self.photo_picam(name)
-                # self.photo_raspistill(name) # tu mozemy wybrać która metoda
+                #self.photo_raspistill(name) # tu mozemy wybrać która metoda
 
                 if i<15: # nie potrzebujemy ostatniego obrotu
                     orders = ["p", "180"]  # obracamy kamera w prawo
@@ -240,10 +253,11 @@ class Driver(object):
                 status = self.arduino_connect.receive()
 
             self.flags.increment_sfera() # zwiekszamy licznik gdy zdjecia gotowe aby PC moglo zaczac czytac zdjecia
+            self.world.set_number(self.position,9)            
             self.flags.pc_status(0) # ustawiamy flage na 0 - pc sciaga zdjecia i jest niegotowe
-            self.flags.update_map(self.world.matrix)
+            #self.flags.update_map(self.world.matrix)
             print("Map update wykonano")
-            self.flags.save_map()
+            self.flags.save_map(self.world.matrix)
 
 
     def mateusz_forward(self, distance):

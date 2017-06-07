@@ -192,6 +192,23 @@ def round_camera(turns=16):  # Wykonuje pełen obrót kamerą i zdjęcia wokół
     #flags.increment_sfera() # zwiekszamy licznik gdy zdjecia gotowe aby PC moglo zaczac czytac zdjecia
     #flags.pc_status(0) # ustawiamy flage na 0 - pc sciaga zdjecia i jest niegotowe
 
+@app.route('/cameraflaga')
+def cameraflaga():
+   print(flags)
+   print("Zwrocono index: ", flags.numer_sfery)
+   return "zdjecie "
+
+@app.route('/photos')  # Pokazuje linki do zdjęć, można zrobić coś sprytniejszego
+def photos():
+    print("Pojedyncze: <\\br>")
+    print('<a href="static/test.jpg"> Tu </a>')
+    print("Pełne koło: <\\br>")
+    for i in range(16):
+        name = str(i)
+        print('<a href="static/'+name+'.jpg">'+name+'</a>')
+    # implementacja
+    return ""
+
 @app.route('/log')
 def log():
     print(auto_log)
@@ -210,7 +227,7 @@ def auto_test():
     print(dest, type(dest))
     #robot.turn(45)
     #robot.forward(5)
-    watek = threading.Thread(target = robot.run, args = [dest])
+    watek = threading.Thread(target = robot.run, args = [dest])     # TODO odpalenie jazdy w osobnym wątku
     watek.daemon = True
     watek.start()
     print(robot.position)
@@ -231,7 +248,7 @@ def auto_wall():  # przesyla polecenie jazdy do tylu (b) i dystans (w metrach), 
     robot = auto.Driver(arduino_connect=arduino_connect, x_size= world_size,y_size= world_size,cell= cell_size,
                         photo_distance= photo_distance) # przekazujemy argumenty
 
-    threading.stack_size(40960000)
+    threading.stack_size(81920000)
     print("Stacksize: ",threading.stack_size())
     watek = threading.Thread(target = robot.follow_wall, args = [15000,distance_to_wall])
     watek.daemon = True
